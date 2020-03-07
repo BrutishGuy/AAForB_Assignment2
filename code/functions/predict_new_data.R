@@ -3,7 +3,7 @@
 #' @param recipe_steps: A recipe
 #' @param data: tibble containing date and consumption 
 #' @param model parsnip model
-#' @return return a tibble with the predictions and true values
+#' @return return a tibble with the predictions 
 
 prediction_new_data <- function(recipe_steps, data, model){
   

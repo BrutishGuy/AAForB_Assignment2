@@ -20,8 +20,9 @@ library(plotly)
 library(GGally)
 library(vip) 
 
-# in case we want to speed up things (probably not necessary)
-library(doParallel) 
+# parallel processing in case we want to speed up things (probably not necessary)
+# I don't knwow whether this works on a mac
+# library(doParallel) 
 
 
 # load own functions
@@ -42,10 +43,10 @@ set.seed(100)
 
 # Parallel Processing
 # parallel::detectCores(logical = TRUE)
-cl <- makeCluster(2)
+#cl <- makeCluster(2)
 
-# metric of interest
-METRIC <- "mae"
+
+METRIC <- "mae" # metric of interest
 MAXIMIZE <- FALSE # we need to minimize the metric (depends on performance metric)
 NUM_VIP <- 10 # look at the 10 most important variables
 
@@ -58,6 +59,7 @@ df <- read.csv("data/train.csv",sep = ";") %>% dplyr::rename(
 # split in train and validation
 # on this traning data I use cross validation to tune the hyper parameters
 # the validation data is used as sort of safeguard to prevent ourselfves from overfitting
+# 0.75 training, 0.25 validation
 split_scheme <- initial_split(df, prop = 3/4)
 
 # check distributions
@@ -65,26 +67,30 @@ split_scheme <- initial_split(df, prop = 3/4)
 p_train_min_p <- split_scheme %>%
   training() %>% select(min_price) %>% 
   ggplot(.,aes(min_price)) + geom_histogram(bins = 30) +
-  labs(x = "max price training")
+  geom_histogram(bins = 30, color = cbPalette[7], fill="white") +
+  labs(x = "max. price") + ggtitle("Train") + THEME
 
 # training max price
 p_train_max_p <- split_scheme %>%
   training() %>% select(max_price) %>% 
-  ggplot(.,aes(max_price)) + geom_histogram(bins = 30) +
-  labs(x = "min price training")
+  ggplot(.,aes(max_price)) + 
+  geom_histogram(bins = 30, color = cbPalette[7], fill="white") +
+  labs(x = "min. price") + ggtitle("Train") + THEME
 
 
 # validation min price
 p_val_min_p <- split_scheme %>%
   testing() %>% select(min_price) %>% 
   ggplot(.,aes(min_price)) + geom_histogram(bins = 30) +
-  labs(x = "max price validation")
+  geom_histogram(bins = 30, color = cbPalette[7], fill="white") +
+  labs(x = "max. price") + ggtitle("Validation") + THEME
 
 # validation max price
 p_val_max_p <- split_scheme %>%
   testing() %>% select(max_price) %>% 
   ggplot(.,aes(max_price)) + geom_histogram(bins = 30) +
-  labs(x = "min price validation")
+  geom_histogram(bins = 30, color = cbPalette[7], fill="white") +
+  labs(x = "min price") + ggtitle("Validation") + THEME 
 
 
 # make figure (this uses the libraray patchwork ==> super cool library)
@@ -302,6 +308,7 @@ glmnnet_pred_max_p <- collect_predictions(glmnnet_results_max_p) %>%
 # fit our model on full training data
 
 # 1) MIN PRICE
+# get_final_model is a custom functions (see code/functions/final_model)
 glmnnet_fit_train_min_p <- get_final_model(recipe_steps = recipe_steps_min_p,
                            data = training(split_scheme),
                            model = glmnet_model,
@@ -309,6 +316,7 @@ glmnnet_fit_train_min_p <- get_final_model(recipe_steps = recipe_steps_min_p,
                            params = glmnet_params_min_p)
 
 # 2) MAX PRICE
+# get_final_model is a custom functions (see code/functions/final_model)
 glmnnet_fit_train_max_p <- get_final_model(recipe_steps = recipe_steps_max_p,
                            data = training(split_scheme),
                            model = glmnet_model,
@@ -439,7 +447,7 @@ sd_training_min_p <- training(split_scheme) %>%
   select(min_price) %>% log %>% pull %>% sd()
 
 # transform back to original unit
-source("code/functions/untransform_target.R")
+
 # add back mean and sd  + invert potentially others transformation such as log trans
 glmnet_pred_val_min_p <- untransform_target(pred = glmnet_pred_val_min_p,
                    mean = mean_training_min_p,
@@ -528,7 +536,7 @@ glmnet_fitAct_min_p_val + glmnet_fitAct_max_p_val
 glmnet_resid_min_p_val <- glmnet_pred_val_min_p %>% 
   ggplot(.,aes(x = seq(1:nrow(glmnet_pred_val_min_p)), y = residual)) + 
   geom_hline(yintercept=0, col = "red",linetype = "dashed") +
-  geom_point() + labs(y = "Residuals", x = "Obserations") + 
+  geom_point() + labs(y = "Residuals", x = "Obserations nr.") + 
   ggtitle("Linear Model (validation) min. price") + THEME 
 
 glmnet_resid_min_p_val %>% ggplotly
@@ -539,30 +547,26 @@ glmnet_resid_min_p_val %>% ggplotly
 glmnet_resid_max_p_val <- glmnet_pred_val_max_p %>% 
   ggplot(.,aes(x = seq(1:nrow(glmnet_pred_val_max_p)), y = residual)) + 
   geom_hline(yintercept=0, col = "red",linetype = "dashed") +
-  geom_point() + labs(y = "Residuals", x = "Obserations") + 
+  geom_point() + labs(y = "Residuals", x = "Obserations nr.") + 
   ggtitle("Linear Model (validation) max. price") + THEME 
 
 glmnet_resid_max_p_val %>% ggplotly
 
 
+# everything together
 (glmnet_fitAct_min_p_val + glmnet_fitAct_max_p_val)
 
-# everything together
+
+# overview plot of everything
 (glmnet_fitAct_min_p_val + glmnet_fitAct_max_p_val)/
 (glmnet_resid_min_p_val + glmnet_resid_max_p_val)
 
+# to save a figure (this is just a test): it will automatically save the last
+# figure you plotted
+ggsave("output/glmnet_predictions_validations.jpeg", 
+       device = "jpeg", width = 8, height = 5)
 
 
-# overview plot of everyting
-
-# TODO: some comparison of predictions for min price and maximum price
-# compute the spread between min price and maximum price and how it varies from 
-# observations to observations
-#
-
-
-# MAKE PREDICTIONS ON TEST DATA
-#---------------------------------------
 
 #----------------------------------------------------------
 # Boosting
@@ -679,6 +683,7 @@ boost_pred_max_p <- collect_predictions(boost_results_max_p) %>%
 # fit our model on full training data
 
 # 1) MIN PRICE
+# get_final_model is a custom functions (see code/functions/final_model)
 boost_fit_train_min_p <- get_final_model(recipe_steps = recipe_steps_min_p,
                                            data = training(split_scheme),
                                            model = boost_model,
@@ -686,6 +691,7 @@ boost_fit_train_min_p <- get_final_model(recipe_steps = recipe_steps_min_p,
                                            params = boost_params_min_p)
 
 # 2) MAX PRICE
+# get_final_model is a custom functions (see code/functions/final_model)
 boost_fit_train_max_p <- get_final_model(recipe_steps = recipe_steps_max_p,
                                            data = training(split_scheme),
                                            model = boost_model,
@@ -720,6 +726,7 @@ p_vip_boost_max_p %>% ggplotly()
 # 1) MIN PRICE
 
 # get prediction on validation data and add true values
+# prediction new data is custom function: see code/functions/predict_new_data.R
 boost_pred_val_min_p <- prediction_new_data(recipe_steps = recipe_steps_min_p,
   data = testing(split_scheme),model = boost_fit_train_min_p) %>%
   mutate(actual = testing(split_scheme)$min_price) %>% 
@@ -728,11 +735,12 @@ boost_pred_val_min_p <- prediction_new_data(recipe_steps = recipe_steps_min_p,
 
 # transform back to original unit
 # add back mean and sd  + invert potentially others transformation such as log trans
+# untransform_target is a custom function see code/functions/untransform_target
 boost_pred_val_min_p <- untransform_target(pred = boost_pred_val_min_p,
                         mean = mean_training_min_p,
                         sd = sd_training_min_p,
                         # suppose you did a log transformation on the target 
-                        # you can give FUN = exp()
+                        # you can give FUN = exp
                         FUN = exp) %>%
                         mutate(residual = actual - fitted_unscaled)
 
@@ -745,6 +753,7 @@ boost_perf_val_min_p
 # 2) MAX PRICE
 
 # get prediction on validation data and add true values
+# prediction new data is custom function: see code/functions/predict_new_data.R
 boost_pred_val_max_p <- prediction_new_data(recipe_steps = recipe_steps_max_p,
   data = testing(split_scheme), model = boost_fit_train_max_p) %>%
   mutate(actual = testing(split_scheme)$max_price) %>% 
@@ -753,6 +762,7 @@ boost_pred_val_max_p <- prediction_new_data(recipe_steps = recipe_steps_max_p,
 
 # transform back to original unit
 # add back mean and sd  + invert potentially others transformation such as log trans
+# untransform_target is a custom function see code/functions/untransform_target
 boost_pred_val_max_p <- untransform_target(pred = boost_pred_val_max_p,
                         mean = mean_training_max_p,
                         sd = sd_training_max_p,
@@ -808,7 +818,7 @@ boost_fitAct_min_p_val + boost_fitAct_max_p_val
 boost_resid_min_p_val <- boost_pred_val_min_p %>% 
   ggplot(.,aes(x = seq(1:nrow(boost_pred_val_min_p)), y = residual)) + 
   geom_hline(yintercept=0, col = "red",linetype = "dashed") +
-  geom_point() + labs(y = "Residuals", x = "Obserations") + 
+  geom_point() + labs(y = "Residuals", x = "Obserations nr.") + 
   ggtitle("Boosting (validation) min. price") + THEME 
 
 boost_resid_min_p_val %>% ggplotly
@@ -819,7 +829,7 @@ boost_resid_min_p_val %>% ggplotly
 boost_resid_max_p_val <- boost_pred_val_max_p %>% 
   ggplot(.,aes(x = seq(1:nrow(boost_pred_val_max_p)), y = residual)) + 
   geom_hline(yintercept=0, col = "red",linetype = "dashed") +
-  geom_point() + labs(y = "Residuals", x = "Obserations") + 
+  geom_point() + labs(y = "Residuals", x = "Obserations nr.") + 
   ggtitle("Boosting (validation) max. price") + THEME 
 
 boost_resid_max_p_val %>% ggplotly
@@ -831,6 +841,10 @@ boost_resid_max_p_val %>% ggplotly
 (boost_fitAct_min_p_val + boost_fitAct_max_p_val)/
   (boost_resid_min_p_val + boost_resid_max_p_val)
 
+# to save a figure (this is just a test): it will automatically save the last
+# figure you plotted
+ggsave("output/boosting_predictions_validations.jpeg", 
+       device = "jpeg", width = 8, height = 5)
 
 #=====================================================#
 # predictions on test data
@@ -856,6 +870,8 @@ sd_allData_max_p <- df %>% select(max_price) %>% pull %>% sd()
 # fit our model on full training data
 
 # 1) min price
+
+# get_final_model is a custom functions (see code/functions/final_model)
 glmnet_fit_allData_min_p <- get_final_model(recipe_steps = recipe_steps_min_p,
                              data = df,
                              model = glmnet_model,
@@ -875,11 +891,13 @@ glmnet_fit_allData_max_p <- get_final_model(recipe_steps = recipe_steps_max_p,
 # 1) MIN PRICE
 
 # get prediction on validation data and add true values
+# prediction new data is custom function: see code/functions/predict_new_data.R
 glmnet_pred_test_min_p <- prediction_new_data(recipe_steps = recipe_steps_min_p,
   data = test, model = glmnet_fit_allData_min_p) %>% dplyr::rename(fitted = .pred)
 
 # transform back to original unit
 # add back mean and sd  + invert potentially others transformation such as log trans
+# untransform_target is a custom function see code/functions/untransform_target
 glmnet_pred_test_min_p <- untransform_target(pred = glmnet_pred_test_min_p,
                                            mean = mean_allData_min_p,
                                            sd = sd_allData_min_p,
@@ -909,7 +927,7 @@ test_sub_glmnet <- tibble(ID = test$id,
        MIN = glmnet_pred_test_min_p$fitted_unscaled,
        MAX = glmnet_pred_test_max_p$fitted_unscaled)  
 
-# submission where the mimimum is greater than the maximum
+# predictions where the mimimum is greater than the maximum
 test_sub_glmnet %>% mutate(
   diff = MIN - MAX
 ) %>% filter(diff>0)
@@ -921,7 +939,7 @@ test_sub_glmnet_update <- tibble(
   MAX = apply(test_sub_glmnet, 1,max)) # take max 
 
 
-# submission where the mimimum is greater than the maximum
+# predictions where the mimimum is greater than the maximum
 # there should be no cases
 test_sub_glmnet_update %>% mutate(
   diff = MIN - MAX
@@ -941,6 +959,7 @@ test_sub_glmnet_update %>%
 
 # 1) min price
 # train on all data (df)
+# get_final_model is a custom functions (see code/functions/final_model)
 boost_fit_allData_min_p <- get_final_model(recipe_steps = recipe_steps_min_p,
                                             data = df,
                                             model = boost_model,
@@ -961,12 +980,14 @@ boost_fit_allData_max_p <- get_final_model(recipe_steps = recipe_steps_max_p,
 # 1) MIN PRICE
 
 # get prediction on validation data and add true values
+# prediction new data is custom function: see code/functions/predict_new_data.R
 boost_pred_test_min_p <- prediction_new_data(recipe_steps = recipe_steps_min_p,
   data = test, model = boost_fit_allData_min_p) %>% 
   dplyr::rename(fitted = .pred)
 
 # transform back to original unit
 # add back mean and sd  + invert potentially others transformation such as log trans
+# untransform_target is a custom function see code/functions/untransform_target
 boost_pred_test_min_p <- untransform_target(pred = boost_pred_test_min_p,
                                              mean = mean_allData_min_p,
                                              sd = sd_allData_min_p,
@@ -997,7 +1018,7 @@ test_sub_boost <- tibble(ID = test$id,
                           MIN = boost_pred_test_min_p$fitted_unscaled,
                           MAX = boost_pred_test_max_p$fitted_unscaled)  
 
-# submission where the mimimum is greater than the maximum
+# predictions where the mimimum is greater than the maximum
 test_sub_boost %>% mutate(
   diff = MIN - MAX
 ) %>% filter(diff>0)
@@ -1009,7 +1030,7 @@ test_sub_boost_update <- tibble(
   MAX = apply(test_sub_boost, 1,max)) # take max 
 
 
-# submission where the mimimum is greater than the maximum
+# predictions where the mimimum is greater than the maximum
 # there should be no cases
 test_sub_boost_update %>% mutate(
   diff = MIN - MAX
