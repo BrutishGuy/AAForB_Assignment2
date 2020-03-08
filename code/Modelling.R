@@ -3,12 +3,13 @@ rm(list=ls())
 
 
 # model building libaries
-library(recipes)
+library(recipes)  # to define preprocessing steps
 library(workflows)
 library(tidymodels)
+library(rsample) # to perform cross validation
 library(tune)    # tuning
 library(glmnet)
-library(tictoc)
+library(tictoc) # timing
 library(rlang)
 
 # visualize
@@ -16,7 +17,7 @@ library(naniar)
 library(ggplot2)
 library(tidyverse)
 library(patchwork)
-library(plotly)
+library(plotly) # interactive vis
 library(GGally)
 library(vip) 
 
