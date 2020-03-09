@@ -1,4 +1,4 @@
-# AAForB_Assignment2
+# Advanced Analytics in Business: Assignment2
 
 A [workflowr][] project.
 
