@@ -69,14 +69,14 @@ p_train_min_p <- split_scheme %>%
   training() %>% select(min_price) %>% 
   ggplot(.,aes(min_price)) + geom_histogram(bins = 30) +
   geom_histogram(bins = 30, color = cbPalette[7], fill="white") +
-  labs(x = "max. price") + ggtitle("Train") + THEME
+  labs(x = "min. price") + ggtitle("Train") + THEME
 
 # training max price
 p_train_max_p <- split_scheme %>%
   training() %>% select(max_price) %>% 
   ggplot(.,aes(max_price)) + 
   geom_histogram(bins = 30, color = cbPalette[7], fill="white") +
-  labs(x = "min. price") + ggtitle("Train") + THEME
+  labs(x = "max. price") + ggtitle("Train") + THEME
 
 
 # validation min price
@@ -84,14 +84,14 @@ p_val_min_p <- split_scheme %>%
   testing() %>% select(min_price) %>% 
   ggplot(.,aes(min_price)) + geom_histogram(bins = 30) +
   geom_histogram(bins = 30, color = cbPalette[7], fill="white") +
-  labs(x = "max. price") + ggtitle("Validation") + THEME
+  labs(x = "min. price") + ggtitle("Validation") + THEME
 
 # validation max price
 p_val_max_p <- split_scheme %>%
   testing() %>% select(max_price) %>% 
   ggplot(.,aes(max_price)) + geom_histogram(bins = 30) +
   geom_histogram(bins = 30, color = cbPalette[7], fill="white") +
-  labs(x = "min price") + ggtitle("Validation") + THEME 
+  labs(x = "max. price") + ggtitle("Validation") + THEME 
 
 
 # make figure (this uses the libraray patchwork ==> super cool library)
