@@ -16,11 +16,7 @@ THEME <- theme_minimal()
 LEGEND <- theme(legend.title = element_blank())
 
 # import data and rename id
-train <- read.csv("data/train.csv",sep = ";") %>% dplyr::rename(
-  id = ï..id) 
-
-
-
+train <- read.csv("data/train.csv",sep = ";", fileEncoding="UTF-8-BOM")
 
 # summary stats
 train %>% anyNA()

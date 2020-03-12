@@ -6,10 +6,10 @@
 #' @param FUN: function nverse transformation (default is just multiply everyting with 1)
 #' @return return a tibble with the predictions in the scaled and orignal units
 
-untransform_target <- function(pred, mean = 0, sd = 1, FUN = function(x) x*1){
+invert_transformations_target <- function(pred, mean = 0, sd = 1, FUN = function(x) x*1){
   
   pred %>% mutate(
-    fitted_unscaled  = (fitted * sd + mean) %>% FUN
+    fitted_inverted  = (fitted * sd + mean) %>% FUN
   )
 }
 
