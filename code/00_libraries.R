@@ -6,7 +6,7 @@ library(readr)
 library(plotly)
 library(ggplot2)
 library(skimr)
-
+library(stringr)
 ### FOR MODELLING
 library(caret)
 library(mlr)
