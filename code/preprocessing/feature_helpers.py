@@ -49,4 +49,7 @@ def storage_categorizer(df):
         return 'Large'
     else:
         return 'Very Large'
-    
+
+def os_details_fixer(df):
+    if 'Apple' in df['name'] or 'apple' in df['name']:
+        return 'Mac OS X Lion'
