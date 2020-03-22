@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 @author: VictorGueorguiev
 """
@@ -89,7 +88,7 @@ df_laptops['cpu_frequency2'] = df_laptops['cpu_frequency2'].astype(float)
 df_laptops['cpu_frequency'] = df_laptops['cpu_frequency'] + df_laptops['cpu_frequency2']
 
 df_laptops = df_laptops.assign(cpu_frequency = [a if a > 0.0 else np.nan for a in df_laptops['cpu_frequency']])
-df_laptops = df_laptops.drop(['cpu_frequency2'], axis = 1)
+df_laptops = df_laptops.drop(['cpu_frequency2'], axis = 1])
 
-
-
+                             
+                             
