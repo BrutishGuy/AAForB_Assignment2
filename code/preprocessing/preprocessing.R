@@ -30,8 +30,8 @@ train_train <- training(split_scheme)
 train_validation <- testing(split_scheme)
 
 # store data
-write.table(x = train_train, file = "data/train_train.csv", sep = ';')
-write.table(x = train_validation, file =  "data/train_validation.csv", sep = ';')
+write_excel_csv(x = train_train, path = "data/train_train.csv", delim = ';')
+write_excel_csv(x = train_validation, path =  "data/train_validation.csv", delim = ';')
 
 # check distributions
 # training min price
