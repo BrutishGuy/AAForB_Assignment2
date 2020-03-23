@@ -1,6 +1,13 @@
+# base
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+
+# own functions
+from preprocessing.feature_helpers import hd_resolution_categorizer
+from preprocessing.feature_helpers import ssd_categorizer
+from preprocessing.feature_helpers import storage_categorizer
+
 
 
 def print_missing(df, ascending=False):
@@ -30,9 +37,11 @@ def print_missing(df, ascending=False):
     
     return pd.DataFrame.from_dict({'missing count':missing_count, 
                                    'missing %':missing_perc})
+
+
                 
     
-class MakeLowerCase(BaseEstimator,TransformerMixin):
+class MakeLowerCase(BaseEstimator, TransformerMixin):
         
     """
     lower cases all columns containing str based features   
@@ -43,16 +52,95 @@ class MakeLowerCase(BaseEstimator,TransformerMixin):
         self.lower_case = []
 
     def fit(self, X, y=None):
+        
         return self
 
     def transform(self, X):
+        
         for c in X.columns:
-            if X[c].dtype == object:
+            if X[c].dtypes == object:
                 X[c] = X[c].str.lower()
                 self.lower_case.append(c)
         return X
-        
+
+class HdResolutionCategorizer(BaseEstimator,TransformerMixin):
     
+    """
+    make a hd_resolution_category feature based on  resolution_string and pixels_x
+    """
+    
+    def __init__(self, drop_columns=None):
+        
+         self.drop_columns = drop_columns
+        
+    def fit(self, X, y=None):
+        
+        return self
+        
+
+    def transform(self, X):
+        
+        X['resolution_string'] = X.loc[:,'pixels_x'].astype(str).copy() + 'x' + X.loc[:,'pixels_y'].astype(str).copy()
+        new_feature = X.apply(hd_resolution_categorizer, axis=1)
+        X = X.assign(hd_resolution_category=new_feature.values) 
+
+        return X.drop(self.drop_columns, axis=1)   
+    
+    
+class SsdCategorizer(BaseEstimator,TransformerMixin):
+    
+    """
+    Categorize the SSD size into specific categories such as Small, Medium and Large, etc.
+    """
+    
+    def __init__(self, drop_original_feature=True):
+        
+        self.drop_original_feature=drop_original_feature
+        
+    def fit(self, X, y=None):
+        
+        return self
+        
+
+    def transform(self, X):
+              
+        X['ssd_category'] = X.apply(ssd_categorizer, axis=1)
+                
+        if self.drop_original_feature:
+            return X.drop(['ssd'], axis=1)
+        else:
+            return X
+
+       
+class StorageCategorizer(BaseEstimator,TransformerMixin):
+    
+    """
+    Categorize the main storage size into specific categories such as Small, Medium and Large, etc.
+    """
+    
+    def __init__(self, drop_original_feature=True):
+        
+        self.drop_original_feature=drop_original_feature
+        
+    def fit(self, X, y=None):
+        
+        return self
+        
+
+    def transform(self, X):
+              
+        X['storage_category'] = X.apply(storage_categorizer, axis=1)
+        
+        if self.drop_original_feature:
+            return X.drop(['storage'], axis=1)
+        else:
+            return X
+
+        
+
+
+    
+            
 def calculate_perf(y_true, y_hat):
         
     """
@@ -122,3 +210,8 @@ def custom_scoring_func(y_true, y_hat):
     error_max_p = np.mean(abs(y_hat[:,1] - y_true[:,1]))
     
     return (error_min_p + error_max_p)
+ 
+    
+
+
+
